@@ -128,16 +128,32 @@ def build_fcs_model(dry_run, skip_docker):
 
     return build_dir
 
+def generate_contract_header(fcs_build_dir, dry_run):
+    """Call check_contract.py to generate fcs_model_contract_check.h in ofp."""
+    print("\n[1.5/4] Generating contract header for ofp ...")
+    contract_path = fcs_build_dir / "fcs_model.contract"
+    output_header = OFP_DIR / "src" / "fcs_mi" / "fcs_model_contract_check.h"
+    run(["python3", "tools/check_contract.py",
+         str(contract_path),
+         str(output_header)],
+        cwd=OFP_DIR, dry_run=dry_run)
 
 def build_ofp(fcs_build_dir, dry_run, skip_docker):
     print("\n[2/4] Building ofp ...")
 
     if skip_docker:
         build_dir = OFP_DIR / "build"
+        # Compute interface hashes to inject into ofp compile-time assertions
+        inc = FCS_MODEL_DIR / "include"
+        fcs_mi_hash = file_sha256_prefix(inc / "fcs_mi_interface.h")
+        vms_hash    = file_sha256_prefix(inc / "vms_interface.h")
+
         run(["cmake", "-B", str(build_dir),
              "-DCMAKE_TOOLCHAIN_FILE=toolchain-arm.cmake",
              f"-DFCS_MODEL_LIB_DIR={fcs_build_dir}",
              f"-DFCS_MODEL_INC_DIR={FCS_MODEL_DIR / 'include'}",
+             f"-DFCS_MI_IF_HASH={fcs_mi_hash}",
+             f"-DVMS_IF_HASH={vms_hash}",
              "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"],
             cwd=OFP_DIR, dry_run=dry_run)
         run(["make", "-C", str(build_dir), "VERBOSE=1"],
@@ -145,6 +161,11 @@ def build_ofp(fcs_build_dir, dry_run, skip_docker):
     else:
         env = parse_env_lock()
         image = f"{env['ofp']['image']}@{env['ofp']['digest']}"
+        # Compute interface hashes to inject into ofp compile-time assertions
+        inc = FCS_MODEL_DIR / "include"
+        fcs_mi_hash = file_sha256_prefix(inc / "fcs_mi_interface.h")
+        vms_hash    = file_sha256_prefix(inc / "vms_interface.h")
+
         run(["docker", "run", "--rm",
              "-v", f"{FCS_MODEL_DIR}:/fcs_model",
              "-v", f"{OFP_DIR}:/workspace",
@@ -155,6 +176,8 @@ def build_ofp(fcs_build_dir, dry_run, skip_docker):
              "-DCMAKE_TOOLCHAIN_FILE=toolchain-arm.cmake "
              "-DFCS_MODEL_LIB_DIR=/fcs_model/build "
              "-DFCS_MODEL_INC_DIR=/fcs_model/include "
+             f"-DFCS_MI_IF_HASH={fcs_mi_hash} "
+             f"-DVMS_IF_HASH={vms_hash} "
              "&& make -C build VERBOSE=1"],
             dry_run=dry_run)
 
@@ -253,6 +276,7 @@ def main():
     print(f"  ofp            : {ofp_tag}")
 
     fcs_build_dir = build_fcs_model(args.dry_run, args.skip_docker)
+    generate_contract_header(fcs_build_dir, args.dry_run)
     build_ofp(fcs_build_dir, args.dry_run, args.skip_docker)
     fcs_hash, vms_hash = verify_contract(fcs_build_dir, args.dry_run)
     seal_manifest(sw_tag, fcs_tag, ofp_tag, fcs_hash, vms_hash, args.dry_run)
