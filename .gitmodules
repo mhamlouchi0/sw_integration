@@ -1,0 +1,6 @@
+[submodule "fcs_model"]
+	path = fcs_model
+	url = git@github.com:mhamlouchi0/fcs_model.git
+[submodule "ofp"]
+	path = ofp
+	url = git@github.com:mhamlouchi0/ofp_POC.git

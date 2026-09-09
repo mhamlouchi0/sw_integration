@@ -1,0 +1,13 @@
+# Build outputs
+build/
+dist/
+
+# Submodule build artefacts (never commit these)
+fcs_model/build/
+ofp/build/
+
+# manifest.lock is intentionally NOT ignored — commit it at each release
+
+# Python cache
+__pycache__/
+*.pyc
