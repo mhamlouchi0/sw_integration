@@ -149,7 +149,7 @@ def step_build_ofp(fcs_build_dir: Path, dry_run: bool, skip_docker: bool) -> Pat
     print("\n[4/6] Building ofp...")
     build_dir = ROOT / "ofp" / "build"
     lib_dir   = fcs_build_dir
-    inc_dir   = ROOT / "fcs_model" / "src" / "Controller" / "include"
+    vms_autogen_dir = ROOT / "fcs_model" / "src" / "VMS_model" / "vms_autogen"
 
     if dry_run:
         print(f"  [dry-run] Would cmake + make in {build_dir}")
@@ -162,7 +162,7 @@ def step_build_ofp(fcs_build_dir: Path, dry_run: bool, skip_docker: bool) -> Pat
         "cmake", "..",
         f"-DCMAKE_TOOLCHAIN_FILE={ROOT / 'ofp' / 'toolchain-arm.cmake'}",
         f"-DFCS_MODEL_LIB_DIR={lib_dir}",
-        f"-DFCS_MODEL_INC_DIR={inc_dir}",
+        f"-DFCS_MODEL_INC_DIR={vms_autogen_dir}",
         "-DFCC_TYPE=SOLAERO2",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
     ], cwd=build_dir)
