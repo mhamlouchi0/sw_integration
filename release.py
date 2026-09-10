@@ -160,8 +160,11 @@ def step_build_ofp(fcs_build_dir: Path, dry_run: bool, skip_docker: bool) -> Pat
     build_dir.mkdir(parents=True, exist_ok=True)
     run([
         "cmake", "..",
+        f"-DCMAKE_TOOLCHAIN_FILE={ROOT / 'ofp' / 'toolchain-arm.cmake'}",
         f"-DFCS_MODEL_LIB_DIR={lib_dir}",
         f"-DFCS_MODEL_INC_DIR={inc_dir}",
+        "-DFCC_TYPE=SOLAERO2",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
     ], cwd=build_dir)
     run(["make", "-j4"], cwd=build_dir)
     print(f"  Build complete: {build_dir}")
